@@ -77,11 +77,62 @@
         this.initUI();
     }
     Pager.prototype.init = function() {
-        function a( elem, c ) {
-            "disabled" !== $( elem ).attr( "disabled" ) && b.GoTo( c );
+        function GoPage( elem, number, THIS ) {
+            "disabled" !== $( elem ).attr( "disabled" ) && THIS.GoTo( number );
         }
         if( 0 !== this.pager.length ) {
             this.initUI();
+	    	var This = this, ThisCfg = This.cfg;
+	    	this.pager.on("change", "[pager-select]", function(){
+				var option = $(this).children(":selected");
+				option.lenght > 0 && (ThisCfg.pageSize = parseInt(option.val(), 10 ));
+				This.GoTo(1);
+			}).on("click", "[pager-first]", function(){
+				GoPage(this, 1, This);
+			}).on("click", "[pager-prev]", function(){
+				GoPage(this, ThisCfg.pageNumber - 1, This )
+			}).on("click", "[pager-last]", function(){
+				GoPage(this, ThisCfg.pageCount, This )
+			}).on("click", "[pager-item]", function() {
+				var option = parseInt($(this).attr("pager-item"), 10 );
+				GoPage( this, option, This );
+			}).on("click", "[pager-go]", function(){
+				var input = This.pager.find("pager-input"), inputVal = parseInt(input.val(), 10);
+				isNaN( inputVal ) ? This.val( ThisCfg.pageNumber ) : This.GoTo( inputVal );
+			})
         } 
     }
+	Pager.prototype.GoTo = function( num, bool ) {
+		var This = this, thisCfg = this.cfg;
+		if( thisCfg.noRecordCount || bool || !(1 > num || num > thisCfg.pageCount ) ) {
+			var pagerSize = This.pager.find("[pager-size]:eq(0)").children(":selected");
+			pagerSize.length > 0 && (thisCfg.pageSize = parseInt(pagerSize.val(), 10));
+			this.gopage = a;
+			var getRequest = this.getRequest();
+			
+		}
+	}
+    Pager.prototype.getRequest = function() {
+		var a, thisCfg = this.cfg, requestData = thisCfg.requestData, requestName = ["pageindex", "pagenum", "pagesize", "action"];
+		if("function" == typeof requestData) {
+			a = thisCfg.requestData(this, this.gopage, thisCfg.pageSize, thisCfg.action )
+		}else {
+			a = {}
+			requestName = [requestData.pageindex || requestName[0], requestData.pagenum || requestName[1], requestData.pagesize || requestName[2], requestData.action || requestName[3] ];
+			for( var item in requestData ) {
+				if( item ) {
+					var f = requestData[ item ];
+					switch ( item ) {
+						case "pageindex":
+						case "pagenum":
+						case "pagesize":
+						case "action":
+							break;
+						default:
+							a[ item ] = f;
+					}
+				}
+			}
+		}
+	}
 }))
